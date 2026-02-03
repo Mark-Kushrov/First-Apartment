@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>מחשבון דירה SubQ</title>
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; }
+        body { font-family: -apple-system, sans-serif; background: #e2e8f0; display: flex; justify-content: center; padding: 15px; margin: 0; }
+        .card { background: white; padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 450px; box-sizing: border-box; }
+        h2 { text-align: center; color: var(--primary); font-size: 1.5rem; margin-bottom: 25px; }
+        .input-box { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 700; font-size: 0.95rem; color: #334155; }
+        input { width: 100%; padding: 15px; border: 2px solid #cbd5e1; border-radius: 12px; font-size: 1.2rem; box-sizing: border-box; -webkit-appearance: none; background: #fff; }
+        .results-container { background: #f1f5f9; padding: 20px; border-radius: 18px; margin-top: 25px; border: 1px solid #e2e8f0; }
+        .row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 1.05rem; }
+        .val { font-weight: 800; color: #1e293b; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>מחשבון רכישה 🏠</h2>
+    
+    <div class="input-box">
+        <label>מחיר הדירה (₪)</label>
+        <input type="number" id="price" value="1800000" inputmode="decimal">
+    </div>
+
+    <div class="results-container">
+        <div class="row">
+            <span>הון עצמי נדרש:</span>
+            <span id="totalReq" class="val">₪0</span>
+        </div>
+        <div class="row">
+            <span>החזר חודשי (משוער):</span>
+            <span id="monthly" class="val">₪0</span>
+        </div>
+        <div class="row" style="color: var(--primary); border-top: 1px solid #cbd5e1; padding-top: 10px; margin-top: 10px;">
+            <span>שכר נטו (30% החזר):</span>
+            <span id="salary" class="val">₪0</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    function calculate() {
+        const priceInput = document.getElementById('price');
+        const p = parseFloat(priceInput.value) || 0;
+
+        if (p > 0) {
+            // הון עצמי: 25% מקדמה + 2.95% נלוות + 15,000
+            const totalRequired = (p * 0.2795) + 15000;
+            // החזר חודשי: לפי מקדם 0.0039
+            const monthly = p * 0.0039;
+            // שכר נטו דרוש לפי 30% החזר (איכות חיים)
+            const salary = monthly / 0.3;
+
+            document.getElementById('totalReq').innerText = '₪' + Math.round(totalRequired).toLocaleString();
+            document.getElementById('monthly').innerText = '₪' + Math.round(monthly).toLocaleString();
+            document.getElementById('salary').innerText = '₪' + Math.round(salary).toLocaleString();
+        }
+    }
+
+    // הפעלה כפולה למניעת תקלות בספארי
+    document.getElementById('price').addEventListener('input', calculate);
+    window.onload = calculate;
+    calculate();
+</script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מחשבון נדל"ן מתקדם - SubQ</title>
+    <style>
+        :root { --primary: #2563eb; --secondary: #64748b; --success: #059669; --danger: #dc2626; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: var(--bg); color: #1e293b; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .card { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); width: 100%; max-width: 500px; }
+        h2 { text-align: center; color: var(--primary); margin: 0 0 1.5rem 0; }
+        .input-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.4rem; font-size: 0.9rem; font-weight: 600; }
+        input, select { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 1rem; box-sizing: border-box; outline: none; transition: 0.2s; background: white; }
+        input:focus, select:focus { border-color: var(--primary); }
+        .results { background: #f1f5f9; padding: 1.2rem; border-radius: 15px; margin-top: 1.5rem; }
+        .result-item { display: flex; justify-content: space-between; margin-bottom: 0.8rem; align-items: center; }
+        .value { font-weight: 700; color: #1e293b; }
+        .gap-section { border-top: 2px dashed #cbd5e1; margin-top: 10px; padding-top: 15px; }
+        .status-positive { color: var(--success); }
+        .status-negative { color: var(--danger); }
+        .highlight-box { background: white; padding: 10px; border-radius: 8px; border-right: 4px solid var(--primary); margin-bottom: 10px; }
+        .info { font-size: 0.75rem; color: #64748b; text-align: center; margin-top: 1.5rem; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>מחשבון רכישה משודרג</h2>
+    
+    <div class="input-group">
+        <label>מחיר הדירה (₪)</label>
+        <input type="number" id="price" placeholder="למשל: 1,800,000" oninput="calculate()">
+    </div>
+
+    <div class="input-group">
+        <label>הון עצמי קיים (₪)</label>
+        <input type="number" id="currentEquity" placeholder="כמה כסף יש לכם כרגע?" oninput="calculate()">
+    </div>
+
+    <div class="input-group">
+        <label>אחוז מימון (משכנתא)</label>
+        <select id="financing" onchange="calculate()">
+            <option value="0.75" selected>75% (מקסימלי לדירה ראשונה)</option>
+            <option value="0.70">70%</option>
+            <option value="0.60">60%</option>
+            <option value="0.50">50%</option>
+        </select>
+    </div>
+
+    <div class="results">
+        <div class="highlight-box">
+            <div class="result-item">
+                <span class="label-text">הון עצמי נדרש למקדמה:</span>
+                <span id="baseEquity" class="value">₪0</span>
+            </div>
+            <div class="result-item">
+                <span class="label-text">הוצאות נלוות משוערות:</span>
+                <span id="extraCosts" class="value">₪0</span>
+            </div>
+        </div>
+
+        <div class="result-item">
+            <span class="label-text">סך הכל הון עצמי נדרש:</span>
+            <span id="totalReq" class="value">₪0</span>
+        </div>
+
+        <div class="result-item">
+            <span class="label-text">החזר חודשי משוער:</span>
+            <span id="monthly" class="value">₪0</span>
+        </div>
+
+        <div class="result-item">
+            <span class="label-text">שכר נטו דרוש (40% החזר):</span>
+            <span id="salary" class="value">₪0</span>
+        </div>
+
+        <div class="result-item gap-section">
+            <span id="gapLabel" class="label-text">מצב הון עצמי:</span>
+            <span id="gapValue" class="value">₪0</span>
+        </div>
+    </div>
+
+    <div class="info">
+        * הוצאות נלוות מחושבות כ-2.95% + 15,000 ש"ח.<br>
+        * ההחזר מחושב לפי מקדם של 0.0039 לכל שקל משכנתא.
+    </div>
+</div>
+
+<script>
+    function calculate() {
+        const p = parseFloat(document.getElementById('price').value) || 0;
+        const current = parseFloat(document.getElementById('currentEquity').value) || 0;
+        const financingPercent = parseFloat(document.getElementById('financing').value);
+        
+        if (p > 0) {
+            // חישוב מקדמה לפי אחוז המימון שנבחר
+            const downPaymentPercent = 1 - financingPercent;
+            const baseEquity = p * downPaymentPercent;
+            
+            // הוצאות נלוות (לפי הנוסחה המקורית שלך שמשקפת בערך 2.95% + 15k)
+            const extraCosts = (p * 0.0295) + 15000;
+            const totalRequired = baseEquity + extraCosts;
+            
+            // החזר חודשי (מותאם לאחוז המימון)
+            // הנוסחה המקורית 0.0039 התבססה על 75% מימון. נתאים אותה:
+            const loanAmount = p * financingPercent;
+            const monthly = loanAmount * (0.0039 / 0.75);
+            
+            // שכר דרוש (החזר / 0.4)
+            const salary = monthly / 0.4;
+            
+            const gap = current - totalRequired;
+
+            // עדכון תצוגה
+            document.getElementById('baseEquity').innerText = '₪' + Math.round(baseEquity).toLocaleString();
+            document.getElementById('extraCosts').innerText = '₪' + Math.round(extraCosts).toLocaleString();
+            document.getElementById('totalReq').innerText = '₪' + Math.round(totalRequired).toLocaleString();
+            document.getElementById('monthly').innerText = '₪' + Math.round(monthly).toLocaleString();
+            document.getElementById('salary').innerText = '₪' + Math.round(salary).toLocaleString();
+            
+            const gapElement = document.getElementById('gapValue');
+            const gapLabel = document.getElementById('gapLabel');
+            
+            if (gap >= 0) {
+                gapElement.innerText = '₪' + Math.round(gap).toLocaleString() + ' (עודף)';
+                gapElement.className = 'value status-positive';
+                gapLabel.innerText = 'הון עצמי פנוי:';
+            } else {
+                gapElement.innerText = '₪' + Math.round(Math.abs(gap)).toLocaleString() + ' (חסר)';
+                gapElement.className = 'value status-negative';
+                gapLabel.innerText = 'חסר לכם להון העצמי:';
+            }
+        }
+    }
+</script>
+
+</body>
+</html>

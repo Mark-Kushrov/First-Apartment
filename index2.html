@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SubQ Real Estate Analyzer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --primary: #2563eb; --success: #059669; --danger: #dc2626; --bg: #f1f5f9; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .card { background: white; padding: 1.5rem; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); width: 100%; max-width: 550px; }
+        h2 { text-align: center; color: var(--primary); margin: 0 0 1.5rem; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .input-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 5px; font-size: 0.85rem; font-weight: 600; color: #475569; }
+        input, select { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; box-sizing: border-box; outline: none; transition: 0.2s; }
+        input:focus { border-color: var(--primary); background: #f8fafc; }
+        .results { background: #f8fafc; padding: 1.5rem; border-radius: 20px; border: 1px solid #e2e8f0; }
+        .result-line { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 1rem; }
+        .value { font-weight: 700; color: #1e293b; }
+        .chart-container { margin: 20px 0; height: 250px; display: flex; justify-content: center; }
+        .btn-whatsapp { width: 100%; background: #25d366; color: white; border: none; padding: 15px; border-radius: 12px; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .status-pill { padding: 4px 12px; border-radius: 20px; font-size: 0.9rem; font-weight: 700; }
+        .negative { background: #fee2e2; color: var(--danger); }
+        .positive { background: #dcfce7; color: var(--success); }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>מנתח עסקת נדל"ן 🏠</h2>
+    
+    <div class="grid">
+        <div class="input-group">
+            <label>מחיר הנכס</label>
+            <input type="number" id="price" value="1800000" oninput="update()">
+        </div>
+        <div class="input-group">
+            <label>הון עצמי קיים</label>
+            <input type="number" id="current" value="500000" oninput="update()">
+        </div>
+        <div class="input-group">
+            <label>אחוז מימון</label>
+            <select id="financing" onchange="update()">
+                <option value="0.75">75% משכנתא</option>
+                <option value="0.60">60% משכנתא</option>
+                <option value="0.50">50% משכנתא</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>הכנסה נטו (זוגי)</label>
+            <input type="number" id="income" value="20000" oninput="update()">
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <div class="results">
+        <div class="result-line">
+            <span>הון עצמי נדרש (כולל נלוות):</span>
+            <span id="totalReq" class="value">0</span>
+        </div>
+        <div class="result-line">
+            <span>מצב הון עצמי:</span>
+            <span id="status" class="status-pill">0</span>
+        </div>
+        <hr>
+        <div class="result-line">
+            <span>החזר חודשי משוער:</span>
+            <span id="monthly" class="value">0</span>
+        </div>
+        <div class="result-line">
+            <span>נשאר לכם בכיס בחודש:</span>
+            <span id="leftover" class="value" style="color: var(--success);">0</span>
+        </div>
+    </div>
+
+    <button class="btn-whatsapp" onclick="share()">
+        שתף סיכום בוואטסאפ
+    </button>
+</div>
+
+<script>
+    let myChart;
+
+    function initChart() {
+        const ctx = document.getElementById('myChart').getContext('2d');
+        myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['משכנתא', 'הון עצמי (מקדמה)', 'הוצאות נלוות'],
+                datasets: [{
+                    data: [75, 25, 3],
+                    backgroundColor: ['#2563eb', '#3b82f6', '#94a3b8'],
+                    borderWidth: 0
+                }]
+            },
+            options: { cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    function update() {
+        const p = parseFloat(document.getElementById('price').value) || 0;
+        const current = parseFloat(document.getElementById('current').value) || 0;
+        const finP = parseFloat(document.getElementById('financing').value);
+        const income = parseFloat(document.getElementById('income').value) || 0;
+
+        const loan = p * finP;
+        const downPayment = p * (1 - finP);
+        const extra = (p * 0.0295) + 15000;
+        const totalReq = downPayment + extra;
+        const monthly = loan * (0.0039 / 0.75);
+        const leftover = income - monthly;
+        const gap = current - totalReq;
+
+        // עדכון טקסטים
+        document.getElementById('totalReq').innerText = '₪' + Math.round(totalReq).toLocaleString();
+        document.getElementById('monthly').innerText = '₪' + Math.round(monthly).toLocaleString();
+        document.getElementById('leftover').innerText = '₪' + Math.round(leftover).toLocaleString();
+        
+        const status = document.getElementById('status');
+        if (gap >= 0) {
+            status.innerText = '₪' + Math.round(gap).toLocaleString() + ' עודף';
+            status.className = 'status-pill positive';
+        } else {
+            status.innerText = '₪' + Math.round(Math.abs(gap)).toLocaleString() + ' חסר';
+            status.className = 'status-pill negative';
+        }
+
+        // עדכון גרף
+        myChart.data.datasets[0].data = [loan, downPayment, extra];
+        myChart.update();
+    }
+
+    function share() {
+        const p = document.getElementById('price').value;
+        const req = document.getElementById('totalReq').innerText;
+        const mon = document.getElementById('monthly').innerText;
+        const stat = document.getElementById('status').innerText;
+        
+        const text = `*סיכום בדיקת דירה - SubQ*\n\n` +
+                     `🏠 מחיר דירה: ${parseInt(p).toLocaleString()} ₪\n` +
+                     `💰 הון עצמי נדרש: ${req}\n` +
+                     `📉 החזר חודשי: ${mon}\n` +
+                     `📌 מצב הון: ${stat}\n\n` +
+                     `נשלח מהמחשבון האישי שלי`;
+        
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+    }
+
+    initChart();
+    update();
+</script>
+
+</body>
+</html>
